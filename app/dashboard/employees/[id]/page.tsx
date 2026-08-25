@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import EmployeeStatusControl from "./employee-status-control";
 
 type EmployeeProfile = {
   id: string;
@@ -900,6 +901,44 @@ export default async function EmployeePage({
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+                <Card>
+        <CardHeader>
+          <CardTitle>
+            Account Administration
+          </CardTitle>
+
+          <CardDescription>
+            Control whether this employee can use
+            Lipsey Time.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="flex flex-col gap-6 rounded-lg border p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="font-medium">
+                {employee.active
+                  ? "Employee account is active"
+                  : "Employee account is inactive"}
+              </div>
+
+              <div className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                {employee.active
+                  ? "Deactivating this employee will end any open job session, end any open shift, and disable access to Lipsey Time."
+                  : "Reactivating this employee restores account access. The employee will remain clocked out until they scan the Clock In QR code."}
+              </div>
+            </div>
+
+            <div className="shrink-0">
+              <EmployeeStatusControl
+                employeeId={employee.id}
+                employeeName={employee.full_name}
+                active={employee.active}
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
