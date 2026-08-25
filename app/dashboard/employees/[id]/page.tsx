@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import EmployeeInviteControl from "./employee-invite-control";
 import EmployeeRoleControl from "./employee-role-control";
 import EmployeeStatusControl from "./employee-status-control";
 
@@ -902,6 +903,43 @@ export default async function EmployeePage({
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+            <Card>
+        <CardHeader>
+          <CardTitle>
+            Account Setup
+          </CardTitle>
+
+          <CardDescription>
+            Send another account setup invitation
+            if the employee has not completed
+            registration.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="flex flex-col gap-6 rounded-lg border p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="font-medium">
+                Employee Login Setup
+              </div>
+
+              <div className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                Use this if the employee did not
+                receive their original invitation
+                or the invitation expired.
+              </div>
+            </div>
+
+            <div className="shrink-0">
+              <EmployeeInviteControl
+                employeeId={employee.id}
+                employeeName={employee.full_name}
+                active={employee.active}
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
             <Card>
