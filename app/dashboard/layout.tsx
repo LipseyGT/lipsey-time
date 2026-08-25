@@ -34,9 +34,17 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .single();
 
-  if (!profile || !profile.active || profile.role !== "admin") {
-    redirect("/protected");
-  }
+if (!profile) {
+  redirect("/auth/login");
+}
+
+if (!profile.active) {
+  redirect("/employee");
+}
+
+if (profile.role !== "admin") {
+  redirect("/employee");
+}
 
   return (
     <div className="min-h-screen bg-muted/30">
