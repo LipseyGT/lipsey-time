@@ -66,11 +66,13 @@ export default async function DashboardLayout({
                 Time
               </div>
 
-              <div className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
+              <Link
+                href="/dashboard/employees"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >           
                 <Users className="h-4 w-4" />
                 Employees
-                <span className="ml-auto text-xs">Later</span>
-              </div>
+              </Link>
 
               <div className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
                 <Clock3 className="h-4 w-4" />
