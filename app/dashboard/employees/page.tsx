@@ -7,6 +7,8 @@ import {
   Users,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -360,9 +362,12 @@ export default async function EmployeesPage() {
                         className="border-b last:border-0"
                       >
                         <td className="py-4 pr-4">
-                          <div className="font-medium">
+                          <Link
+                            href={`/dashboard/employees/${employee.id}`}
+                            className="font-medium underline-offset-4 hover:underline"
+                          >
                             {employee.full_name}
-                          </div>
+                          </Link>
                         </td>
 
                         <td className="py-4 pr-4">
