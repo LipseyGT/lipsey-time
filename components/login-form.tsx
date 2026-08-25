@@ -50,7 +50,7 @@ export function LoginForm({
       const destination =
         next && next.startsWith("/") && !next.startsWith("//")
           ? next
-          : "/protected";
+          : "/dashboard";
 
       router.replace(destination);
       router.refresh();

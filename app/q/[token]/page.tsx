@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ScanProcessor from "./scan-processor";
 
-export const instant = false;
 
 export default async function ScanPage({
   params,
