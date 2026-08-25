@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+
+import { LogoutButton } from "@/components/logout-button";
+
 import { createClient } from "@/lib/supabase/server";
 
 export default async function EmployeePage() {
@@ -67,13 +71,19 @@ export default async function EmployeePage() {
   return (
     <main className="mx-auto max-w-3xl p-8">
       <div className="rounded-xl border p-8">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Lipsey Time
-        </h1>
+    <div className="flex items-start justify-between gap-4">
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+             Lipsey Time
+            </h1>
 
-        <p className="mt-2 text-lg">
-          Welcome, {profile.full_name}.
-        </p>
+            <p className="mt-2 text-lg">
+             Welcome, {profile.full_name}.
+            </p>
+        </div>
+
+        <LogoutButton />
+    </div>
 
         <div className="mt-6 rounded-lg bg-muted p-5">
           <div className="font-medium">
