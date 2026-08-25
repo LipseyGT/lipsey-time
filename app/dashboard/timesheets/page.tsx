@@ -368,6 +368,19 @@ export default async function TimesheetsPage({
         }
       );
 
+      const jobsRequest =
+  supabase
+    .from("jobs")
+    .select(
+      "id, job_number, customer, description, category, active"
+    )
+    .order(
+      "job_number",
+      {
+        ascending: true,
+      }
+    );
+
   let shiftsRequest =
     supabase
       .from("shifts")
@@ -419,15 +432,17 @@ export default async function TimesheetsPage({
   }
 
   const [
-    profilesResult,
-    shiftsResult,
-    jobSessionsResult,
-  ] =
-    await Promise.all([
-      profilesRequest,
-      shiftsRequest,
-      jobSessionsRequest,
-    ]);
+  profilesResult,
+  shiftsResult,
+  jobSessionsResult,
+  jobsResult,
+] =
+  await Promise.all([
+    profilesRequest,
+    shiftsRequest,
+    jobSessionsRequest,
+    jobsRequest,
+  ]);
 
   const profiles =
     (profilesResult.data ??
@@ -440,13 +455,15 @@ export default async function TimesheetsPage({
   const jobSessions =
     (jobSessionsResult.data ??
       []) as JobSession[];
+      
 
   const hasError =
-    Boolean(
-      profilesResult.error ||
-        shiftsResult.error ||
-        jobSessionsResult.error
-    );
+  Boolean(
+    profilesResult.error ||
+      shiftsResult.error ||
+      jobSessionsResult.error ||
+      jobsResult.error
+  );
 
   const profileById =
     new Map(
