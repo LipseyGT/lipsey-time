@@ -56,9 +56,6 @@ export async function editEmployee(
     };
   }
 
-  /*
-   * Verify who is making this request.
-   */
   const supabase = await createClient();
 
   const {
@@ -73,10 +70,6 @@ export async function editEmployee(
     };
   }
 
-  /*
-   * Verify that the logged-in user is
-   * actually an active administrator.
-   */
   const {
     data: administratorProfile,
     error: administratorError,
@@ -98,15 +91,8 @@ export async function editEmployee(
     };
   }
 
-  /*
-   * Now that authorization has been verified,
-   * create the elevated server-only client.
-   */
   const admin = createAdminClient();
 
-  /*
-   * Make sure the employee actually exists.
-   */
   const {
     data: existingEmployee,
     error: employeeLookupError,
@@ -130,10 +116,6 @@ export async function editEmployee(
     };
   }
 
-  /*
-   * Make sure another employee is not already
-   * using the requested employee number.
-   */
   const {
     data: duplicateEmployeeNumber,
     error: duplicateCheckError,
@@ -158,15 +140,7 @@ export async function editEmployee(
     };
   }
 
-  /*
-   * Update only the fields handled by Phase 2.9B.
-   *
-   * Role, active status, email, and authentication
-   * information are deliberately left untouched.
-   */
-  const {
-    error: updateError,
-  } = await admin
+  const { error: updateError } = await admin
     .from("profiles")
     .update({
       full_name: fullName,
@@ -182,19 +156,12 @@ export async function editEmployee(
     };
   }
 
-  /*
-   * Tell Next.js that pages containing employee
-   * data should be refreshed.
-   */
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/employees");
   revalidatePath(
     `/dashboard/employees/${employeeId}`
   );
 
-  /*
-   * Return to the employee's detail page.
-   */
   redirect(
     `/dashboard/employees/${employeeId}`
   );
