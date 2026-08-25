@@ -82,11 +82,13 @@ if (profile.role !== "admin") {
                 Employees
               </Link>
 
-              <div className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
+              <Link
+                href="/dashboard/timesheets"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
                 <Clock3 className="h-4 w-4" />
                 Timesheets
-                <span className="ml-auto text-xs">Later</span>
-              </div>
+              </Link>
 
               <div className="mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Work
