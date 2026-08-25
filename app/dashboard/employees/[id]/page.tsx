@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import EmployeeRoleControl from "./employee-role-control";
 import EmployeeStatusControl from "./employee-status-control";
 
 type EmployeeProfile = {
@@ -901,6 +902,46 @@ export default async function EmployeePage({
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+            <Card>
+        <CardHeader>
+          <CardTitle>
+            Role Management
+          </CardTitle>
+
+          <CardDescription>
+            Control whether this user has employee
+            or administrator permissions.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="grid gap-6 rounded-lg border p-5 lg:grid-cols-[1fr_320px] lg:items-center">
+            <div>
+              <div className="font-medium">
+                Current Role:{" "}
+                {employee.role === "admin"
+                  ? "Administrator"
+                  : "Employee"}
+              </div>
+
+              <div className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                Administrators can access
+                company-wide employee, shift,
+                job-session, and management data.
+                Standard employees should remain
+                assigned the Employee role.
+              </div>
+            </div>
+
+            <EmployeeRoleControl
+              employeeId={employee.id}
+              employeeName={employee.full_name}
+              currentRole={employee.role}
+              active={employee.active}
+            />
+          </div>
         </CardContent>
       </Card>
                 <Card>
