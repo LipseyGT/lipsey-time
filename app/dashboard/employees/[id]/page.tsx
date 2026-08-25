@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Clock3,
   HardHat,
+  History,
   Timer,
   UserRound,
 } from "lucide-react";
@@ -272,6 +273,7 @@ export default async function EmployeePage({
       : 0;
 
   const recentShifts = shifts.slice(0, 14);
+  const recentJobSessions = jobSessions.slice(0, 25);
 
   return (
     <div className="space-y-8">
@@ -708,6 +710,154 @@ export default async function EmployeePage({
                           {shift.clock_out
                             ? formatTime(
                                 shift.clock_out
+                              )
+                            : "Present"}
+                        </td>
+
+                        <td className="py-4 pr-4 font-medium">
+                          {formatDuration(
+                            duration
+                          )}
+                        </td>
+
+                        <td className="py-4">
+                          {isOpen ? (
+                            <Badge>
+                              Open
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">
+                              Completed
+                            </Badge>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+            <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border">
+              <History className="h-5 w-5" />
+            </div>
+
+            <div>
+              <CardTitle>Recent Job History</CardTitle>
+
+              <CardDescription>
+                The employee&apos;s 25 most recent job sessions.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {recentJobSessions.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center">
+              <div className="font-medium">
+                No job history
+              </div>
+
+              <div className="mt-1 text-sm text-muted-foreground">
+                Job sessions will appear here after this
+                employee begins scanning job QR codes.
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-3 pr-4 font-medium">
+                      Date
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      Job
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      Customer
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      Start
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      End
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      Duration
+                    </th>
+
+                    <th className="pb-3 font-medium">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {recentJobSessions.map((session) => {
+                    const job = jobById.get(
+                      session.job_id
+                    );
+
+                    const isOpen =
+                      session.ended_at === null;
+
+                    const duration =
+                      getDurationMilliseconds(
+                        session.started_at,
+                        session.ended_at
+                      );
+
+                    return (
+                      <tr
+                        key={session.id}
+                        className="border-b last:border-0"
+                      >
+                        <td className="py-4 pr-4 font-medium">
+                          {formatDate(
+                            session.started_at
+                          )}
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          <div className="font-medium">
+                            {job
+                              ? `Job ${job.job_number}`
+                              : `Job ID ${session.job_id}`}
+                          </div>
+
+                          {job?.description && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {job.description}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          {job?.customer ?? "—"}
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          {formatTime(
+                            session.started_at
+                          )}
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          {session.ended_at
+                            ? formatTime(
+                                session.ended_at
                               )
                             : "Present"}
                         </td>
