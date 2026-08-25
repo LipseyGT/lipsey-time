@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -972,8 +973,12 @@ export default async function TimesheetsPage({
                       Hours
                     </th>
 
+                    <th className="py-3 pr-4">
+                        Status
+                    </th>
+
                     <th className="py-3">
-                      Status
+                        Actions
                     </th>
                   </tr>
                 </thead>
@@ -1034,18 +1039,32 @@ export default async function TimesheetsPage({
                             )}
                           </td>
 
-                          <td className="py-4">
+                          <td className="py-4 pr-4">
                             {shift.clock_out ===
                             null ? (
-                              <Badge>
-                                Open
-                              </Badge>
+                                <Badge>
+                                 Open
+                                </Badge>
                             ) : (
-                              <Badge variant="outline">
-                                Completed
-                              </Badge>
+                                <Badge variant="outline">
+                                 Completed
+                                </Badge>
                             )}
                           </td>
+
+<td className="py-4">
+  <Button
+    variant="outline"
+    size="sm"
+    asChild
+  >
+    <Link
+      href={`/dashboard/timesheets/shifts/${shift.id}/edit`}
+    >
+      Edit
+    </Link>
+  </Button>
+</td>
                         </tr>
                       );
                     }
