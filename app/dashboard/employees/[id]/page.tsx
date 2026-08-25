@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   BriefcaseBusiness,
+  CalendarDays,
   Clock3,
   HardHat,
   Timer,
@@ -58,6 +59,15 @@ function formatTime(dateString: string) {
     timeZone: "America/Chicago",
     hour: "numeric",
     minute: "2-digit",
+  }).format(new Date(dateString));
+}
+
+function formatDate(dateString: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   }).format(new Date(dateString));
 }
 
@@ -260,6 +270,8 @@ export default async function EmployeePage({
           null
         )
       : 0;
+
+  const recentShifts = shifts.slice(0, 14);
 
   return (
     <div className="space-y-8">
@@ -601,6 +613,125 @@ export default async function EmployeePage({
                       );
                     }
                   )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border">
+              <CalendarDays className="h-5 w-5" />
+            </div>
+
+            <div>
+              <CardTitle>Recent Shift History</CardTitle>
+
+              <CardDescription>
+                The employee&apos;s 14 most recent shifts.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {recentShifts.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center">
+              <div className="font-medium">
+                No shift history
+              </div>
+
+              <div className="mt-1 text-sm text-muted-foreground">
+                Shifts will appear here after this employee
+                begins using Lipsey Time.
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-3 pr-4 font-medium">
+                      Date
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      Clock In
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      Clock Out
+                    </th>
+
+                    <th className="pb-3 pr-4 font-medium">
+                      Duration
+                    </th>
+
+                    <th className="pb-3 font-medium">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {recentShifts.map((shift) => {
+                    const isOpen =
+                      shift.clock_out === null;
+
+                    const duration =
+                      getDurationMilliseconds(
+                        shift.clock_in,
+                        shift.clock_out
+                      );
+
+                    return (
+                      <tr
+                        key={shift.id}
+                        className="border-b last:border-0"
+                      >
+                        <td className="py-4 pr-4 font-medium">
+                          {formatDate(
+                            shift.clock_in
+                          )}
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          {formatTime(
+                            shift.clock_in
+                          )}
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          {shift.clock_out
+                            ? formatTime(
+                                shift.clock_out
+                              )
+                            : "Present"}
+                        </td>
+
+                        <td className="py-4 pr-4 font-medium">
+                          {formatDuration(
+                            duration
+                          )}
+                        </td>
+
+                        <td className="py-4">
+                          {isOpen ? (
+                            <Badge>
+                              Open
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">
+                              Completed
+                            </Badge>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
