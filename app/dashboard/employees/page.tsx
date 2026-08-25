@@ -2,6 +2,7 @@ import {
   BriefcaseBusiness,
   Clock3,
   HardHat,
+  Plus,
   ShieldCheck,
   UserRound,
   Users,
@@ -10,6 +11,7 @@ import {
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -157,16 +159,25 @@ export default async function EmployeesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Employees
-        </h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+             Employees
+            </h1>
 
-        <p className="mt-1 text-muted-foreground">
-          View employee status, clock activity, and
-          current job assignments.
-        </p>
-      </div>
+            <p className="mt-1 text-muted-foreground">
+            View employee status, clock activity, and
+            current job assignments.
+            </p>
+        </div>
+
+        <Button asChild>
+            <Link href="/dashboard/employees/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Employee
+            </Link>
+        </Button>
+        </div>
 
       {hasQueryError && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
