@@ -7,11 +7,13 @@ import {
   Clock3,
   HardHat,
   History,
+  Pencil,
   Timer,
   UserRound,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -287,33 +289,45 @@ export default async function EmployeePage({
         </Link>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {employee.full_name}
-          </h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+  <div>
+    <h1 className="text-3xl font-bold tracking-tight">
+      {employee.full_name}
+    </h1>
 
-          <p className="mt-1 text-muted-foreground">
-            Employee #{employee.employee_number}
-          </p>
-        </div>
+    <p className="mt-1 text-muted-foreground">
+      Employee #{employee.employee_number}
+    </p>
 
-        <div className="flex gap-2">
-          <Badge variant="outline">
-            {employee.role === "admin"
-              ? "Administrator"
-              : "Employee"}
-          </Badge>
+    <div className="mt-3 flex gap-2">
+      <Badge variant="outline">
+        {employee.role === "admin"
+          ? "Administrator"
+          : "Employee"}
+      </Badge>
 
-          {employee.active ? (
-            <Badge>Active</Badge>
-          ) : (
-            <Badge variant="secondary">
-              Inactive
-            </Badge>
-          )}
-        </div>
-      </div>
+      {employee.active ? (
+        <Badge>Active</Badge>
+      ) : (
+        <Badge variant="secondary">
+          Inactive
+        </Badge>
+      )}
+    </div>
+  </div>
+
+  <Button
+    variant="outline"
+    asChild
+  >
+    <Link
+      href={`/dashboard/employees/${employee.id}/edit`}
+    >
+      <Pencil className="mr-2 h-4 w-4" />
+      Edit Employee
+    </Link>
+  </Button>
+</div>
 
       {hasQueryError && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
