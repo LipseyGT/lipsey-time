@@ -110,11 +110,13 @@ if (profile.role !== "admin") {
   Jobs
 </Link>
 
-              <div className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
-                <QrCode className="h-4 w-4" />
-                QR Codes
-                <span className="ml-auto text-xs">Later</span>
-              </div>
+              <Link
+  href="/dashboard/qr-codes"
+  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+>
+  <QrCode className="h-4 w-4" />
+  QR Codes
+</Link>
 
               <div className="mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Reporting
