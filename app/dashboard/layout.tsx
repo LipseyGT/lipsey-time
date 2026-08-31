@@ -122,11 +122,13 @@ if (profile.role !== "admin") {
                 Reporting
               </div>
 
-              <div className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                Reports
-                <span className="ml-auto text-xs">Later</span>
-              </div>
+              <Link
+  href="/dashboard/reports"
+  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+>
+  <FileText className="h-4 w-4" />
+  Reports
+</Link>
             </nav>
 
             <div className="border-t p-4">
