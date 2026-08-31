@@ -99,10 +99,10 @@ export default function ScanProcessor({
         )}
 
         {result?.job_number && (
-          <p className="text-3xl font-semibold">
-            Job {result.job_number}
-          </p>
-        )}
+  <p className="text-3xl font-semibold">
+    {result.job_number}
+  </p>
+)}
 
         {result?.time && (
           <p className="text-lg">
