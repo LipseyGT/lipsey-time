@@ -1,485 +1,472 @@
+import Link from "next/link";
+import { DashboardAutoRefresh } from "./_components/auto-refresh";
+import { requireReportsAdmin } from "./reports/_lib/access";
 import {
-  BriefcaseBusiness,
-  Clock3,
-  HardHat,
-  Users,
-} from "lucide-react";
-
-import { createClient } from "@/lib/supabase/server";
+  centralToday,
+  formatHours,
+  formatRangeLabel,
+  reportBounds,
+  type JobRow,
+  type JobSessionRow,
+  type ProfileRow,
+  type ShiftRow,
+} from "./reports/_lib/report";
+import { loadReportData } from "./reports/_lib/load-report";
+import { loadPayrollData } from "./payroll/_lib/load-payroll";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  mondayForDate,
+  sundayForMonday,
+} from "./payroll/_lib/payroll";
 
-type Profile = {
-  id: string;
-  employee_number: string;
-  full_name: string;
-  active: boolean;
+export const dynamic = "force-dynamic";
+
+type CurrentWorker = {
+  shiftId: number;
+  userId: string;
+  employeeName: string;
+  employeeNumber: string;
+  clockIn: string;
+  currentJobId: number | null;
+  currentJobNumber: string | null;
+  jobStartedAt: string | null;
 };
 
-type Job = {
-  id: number;
-  job_number: string;
-  customer: string | null;
-  description: string | null;
-  active: boolean;
-};
-
-type OpenShift = {
-  id: number;
-  user_id: string;
-  clock_in: string;
-};
-
-type OpenJobSession = {
-  id: number;
-  user_id: string;
-  job_id: number;
-  started_at: string;
-};
-
-type AuditEvent = {
-  id: number;
-  user_id: string;
-  event_type: string;
-  job_id: number | null;
-  occurred_at: string;
-};
-
-function formatTime(dateString: string) {
+function formatCentralTime(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Chicago",
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(dateString));
+  }).format(new Date(value));
 }
 
-function formatDuration(dateString: string) {
-  const started = new Date(dateString).getTime();
-  const now = Date.now();
-
-  const totalMinutes = Math.max(
-    0,
-    Math.floor((now - started) / 60000)
-  );
-
+function elapsedLabel(value: string) {
+  const ms = Math.max(0, Date.now() - new Date(value).getTime());
+  const totalMinutes = Math.floor(ms / 60_000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
-  if (hours === 0) {
+  if (hours <= 0) {
     return `${minutes}m`;
   }
 
   return `${hours}h ${minutes}m`;
 }
 
-function describeEvent(
-  event: AuditEvent,
-  employeeName: string,
-  jobNumber?: string
-) {
-  switch (event.event_type) {
-    case "clock_in":
-      return `${employeeName} clocked in`;
-
-    case "clock_out":
-      return `${employeeName} clocked out`;
-
-    case "job_start":
-      return jobNumber
-        ? `${employeeName} started Job ${jobNumber}`
-        : `${employeeName} started a job`;
-
-    case "job_stop":
-      return jobNumber
-        ? `${employeeName} stopped Job ${jobNumber}`
-        : `${employeeName} stopped a job`;
-
-    default:
-      return `${employeeName}: ${event.event_type}`;
-  }
-}
-
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  const { supabase } = await requireReportsAdmin();
+
+  const today = centralToday();
+  const weekStart = mondayForDate(today);
+  const weekEnd = sundayForMonday(weekStart);
+  const { start: todayStart, endExclusive: tomorrowStart } =
+    reportBounds(today, today);
 
   const [
-    profilesResult,
-    jobsResult,
-    shiftsResult,
-    sessionsResult,
-    eventsResult,
+    todayReport,
+    weekPayroll,
+    { data: profilesData, error: profilesError },
+    { data: jobsData, error: jobsError },
+    { data: openShiftsData, error: openShiftsError },
+    { data: openSessionsData, error: openSessionsError },
   ] = await Promise.all([
+    loadReportData({
+      supabase,
+      from: today,
+      to: today,
+    }),
+    loadPayrollData({
+      supabase,
+      from: weekStart,
+      to: weekEnd,
+    }),
     supabase
       .from("profiles")
-      .select("id, employee_number, full_name, active")
-      .order("full_name"),
-
+      .select("id, employee_number, full_name, role, active"),
     supabase
       .from("jobs")
-      .select(
-        "id, job_number, customer, description, active"
-      )
+      .select("id, job_number, customer, description, category, active")
+      .eq("active", true)
       .order("job_number"),
-
     supabase
       .from("shifts")
-      .select("id, user_id, clock_in")
+      .select("id, user_id, clock_in, clock_out")
       .is("clock_out", null)
+      .gte("clock_in", todayStart.toISOString())
+      .lt("clock_in", tomorrowStart.toISOString())
       .order("clock_in", { ascending: true }),
-
     supabase
       .from("job_sessions")
-      .select("id, user_id, job_id, started_at")
+      .select("id, shift_id, user_id, job_id, started_at, ended_at")
       .is("ended_at", null)
+      .gte("started_at", todayStart.toISOString())
+      .lt("started_at", tomorrowStart.toISOString())
       .order("started_at", { ascending: false }),
-
-    supabase
-      .from("audit_events")
-      .select(
-        "id, user_id, event_type, job_id, occurred_at"
-      )
-      .order("occurred_at", { ascending: false })
-      .limit(10),
   ]);
 
-  const profiles =
-    (profilesResult.data ?? []) as Profile[];
+  if (profilesError) {
+    throw new Error(`Unable to load dashboard employees: ${profilesError.message}`);
+  }
 
-  const jobs =
-    (jobsResult.data ?? []) as Job[];
+  if (jobsError) {
+    throw new Error(`Unable to load dashboard jobs: ${jobsError.message}`);
+  }
 
-  const openShifts =
-    (shiftsResult.data ?? []) as OpenShift[];
+  if (openShiftsError) {
+    throw new Error(`Unable to load open shifts: ${openShiftsError.message}`);
+  }
 
-  const openSessions =
-    (sessionsResult.data ?? []) as OpenJobSession[];
+  if (openSessionsError) {
+    throw new Error(
+      `Unable to load open job sessions: ${openSessionsError.message}`,
+    );
+  }
 
-  const recentEvents =
-    (eventsResult.data ?? []) as AuditEvent[];
+  const profiles = (profilesData ?? []) as ProfileRow[];
+  const jobs = (jobsData ?? []) as JobRow[];
+  const openShifts = (openShiftsData ?? []) as ShiftRow[];
+  const openSessions = (openSessionsData ?? []) as JobSessionRow[];
 
-  const hasQueryError = Boolean(
-    profilesResult.error ||
-      jobsResult.error ||
-      shiftsResult.error ||
-      sessionsResult.error ||
-      eventsResult.error
+  const profileById = new Map(
+    profiles.map((profile) => [profile.id, profile]),
   );
+  const jobById = new Map(jobs.map((job) => [job.id, job]));
 
-  const activeProfiles = profiles.filter(
-    (profile) => profile.active
-  );
-
-  const activeJobs = jobs.filter((job) => job.active);
-
-  const profileMap = new Map(
-    profiles.map((profile) => [profile.id, profile])
-  );
-
-  const jobMap = new Map(
-    jobs.map((job) => [job.id, job])
-  );
-
-  const currentSessionByUser =
-    new Map<string, OpenJobSession>();
+  const openSessionByShift = new Map<number, JobSessionRow>();
 
   for (const session of openSessions) {
-    if (!currentSessionByUser.has(session.user_id)) {
-      currentSessionByUser.set(
-        session.user_id,
-        session
-      );
+    if (!openSessionByShift.has(session.shift_id)) {
+      openSessionByShift.set(session.shift_id, session);
     }
   }
 
-  const currentWorkers = openShifts.map((shift) => {
-    const employee = profileMap.get(shift.user_id);
+  const currentWorkers: CurrentWorker[] = openShifts
+    .map((shift) => {
+      const profile = profileById.get(shift.user_id);
+      const session = openSessionByShift.get(shift.id);
+      const job = session ? jobById.get(session.job_id) : undefined;
 
-    const session =
-      currentSessionByUser.get(shift.user_id);
+      return {
+        shiftId: shift.id,
+        userId: shift.user_id,
+        employeeName: profile?.full_name ?? "Unknown employee",
+        employeeNumber: profile?.employee_number ?? "—",
+        clockIn: shift.clock_in,
+        currentJobId: job?.id ?? null,
+        currentJobNumber: job?.job_number ?? null,
+        jobStartedAt: session?.started_at ?? null,
+      };
+    })
+    .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
 
-    const job = session
-      ? jobMap.get(session.job_id)
-      : undefined;
+  const topJobs = [...todayReport.jobs]
+    .sort((a, b) => b.laborHours - a.laborHours)
+    .slice(0, 6);
 
-    return {
-      shift,
-      employee,
-      session,
-      job,
-    };
-  });
+  const workingWithoutJob = currentWorkers.filter(
+    (worker) => !worker.currentJobId,
+  ).length;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Dashboard
-        </h1>
+    <div className="mx-auto w-full max-w-7xl space-y-8">
+      <DashboardAutoRefresh />
 
-        <p className="mt-1 text-muted-foreground">
-          Live overview of employee time and active jobs.
-        </p>
-      </div>
-
-      {hasQueryError && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
-          Some dashboard information could not be loaded.
-          Check the VS Code terminal for the database error.
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Operations Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Live overview for {formatRangeLabel(today, today)}. Updates every
+            60 seconds.
+          </p>
         </div>
-      )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium">
-              Clocked In
-            </CardTitle>
+        <div className="text-sm text-muted-foreground">
+          Workweek: {formatRangeLabel(weekStart, weekEnd)}
+        </div>
+      </header>
 
-            <Clock3 className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Working Now"
+          value={String(currentWorkers.length)}
+          detail={
+            workingWithoutJob > 0
+              ? `${workingWithoutJob} without an active job`
+              : "All current workers assigned"
+          }
+        />
+        <MetricCard
+          label="Active Jobs"
+          value={String(jobs.length)}
+          detail="Available for employee job scans"
+        />
+        <MetricCard
+          label="Hours Today"
+          value={`${formatHours(todayReport.summary.shiftHours)} hrs`}
+          detail={`${todayReport.summary.employeeCount} employees recorded`}
+        />
+        <MetricCard
+          label="Job Hours Today"
+          value={`${formatHours(todayReport.summary.jobHours)} hrs`}
+          detail={`${formatHours(todayReport.summary.unallocatedHours)} hrs unallocated`}
+        />
+      </section>
 
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {openShifts.length}
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <article className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border p-5">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                Currently Working
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Employees with an open shift today.
+              </p>
             </div>
 
-            <CardDescription className="mt-2">
-              Employees currently on shift
-            </CardDescription>
-          </CardContent>
-        </Card>
+            <Link
+              href="/dashboard/shifts"
+              className="text-sm font-medium underline-offset-4 hover:underline"
+            >
+              View Shifts
+            </Link>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium">
-              Active Jobs
-            </CardTitle>
-
-            <BriefcaseBusiness className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {activeJobs.length}
+          {currentWorkers.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No employees are currently clocked in.
             </div>
-
-            <CardDescription className="mt-2">
-              Jobs currently available
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium">
-              Working on Jobs
-            </CardTitle>
-
-            <HardHat className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {openSessions.length}
-            </div>
-
-            <CardDescription className="mt-2">
-              Active job sessions
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium">
-              Active Employees
-            </CardTitle>
-
-            <Users className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {activeProfiles.length}
-            </div>
-
-            <CardDescription className="mt-2">
-              Employees enabled in the system
-            </CardDescription>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Currently Working</CardTitle>
-
-            <CardDescription>
-              Employees who are currently clocked in.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {currentWorkers.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                Nobody is currently clocked in.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="pb-3 pr-4 font-medium">
-                        Employee
-                      </th>
-
-                      <th className="pb-3 pr-4 font-medium">
-                        Current Job
-                      </th>
-
-                      <th className="pb-3 pr-4 font-medium">
-                        Started
-                      </th>
-
-                      <th className="pb-3 font-medium">
-                        Duration
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {currentWorkers.map(
-                      ({
-                        shift,
-                        employee,
-                        session,
-                        job,
-                      }) => {
-                        const startTime =
-                          session?.started_at ??
-                          shift.clock_in;
-
-                        return (
-                          <tr
-                            key={shift.id}
-                            className="border-b last:border-0"
-                          >
-                            <td className="py-4 pr-4">
-                              <div className="font-medium">
-                                {employee?.full_name ??
-                                  "Unknown employee"}
-                              </div>
-
-                              {employee?.employee_number && (
-                                <div className="text-xs text-muted-foreground">
-                                  Employee #
-                                  {
-                                    employee.employee_number
-                                  }
-                                </div>
-                              )}
-                            </td>
-
-                            <td className="py-4 pr-4">
-                              {job ? (
-                                <>
-                                  <div className="font-medium">
-                                    Job {job.job_number}
-                                  </div>
-
-                                  <div className="text-xs text-muted-foreground">
-                                    {job.customer ??
-                                      job.description ??
-                                      "No description"}
-                                  </div>
-                                </>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  Clocked in — no active
-                                  job
-                                </span>
-                              )}
-                            </td>
-
-                            <td className="py-4 pr-4">
-                              {formatTime(startTime)}
-                            </td>
-
-                            <td className="py-4 font-medium">
-                              {formatDuration(startTime)}
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-
-            <CardDescription>
-              Latest clock and job activity.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {recentEvents.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                No recent activity.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentEvents.map((event) => {
-                  const employee =
-                    profileMap.get(event.user_id);
-
-                  const job = event.job_id
-                    ? jobMap.get(event.job_id)
-                    : undefined;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="flex gap-3"
+          ) : (
+            <div className="divide-y divide-border">
+              {currentWorkers.map((worker) => (
+                <div
+                  key={worker.shiftId}
+                  className="grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-center"
+                >
+                  <div>
+                    <Link
+                      href={`/dashboard/employees/${worker.userId}`}
+                      className="font-semibold underline-offset-4 hover:underline"
                     >
-                      <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-foreground" />
-
-                      <div className="min-w-0">
-                        <div className="text-sm">
-                          {describeEvent(
-                            event,
-                            employee?.full_name ??
-                              "Unknown employee",
-                            job?.job_number
-                          )}
-                        </div>
-
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {formatTime(
-                            event.occurred_at
-                          )}
-                        </div>
-                      </div>
+                      {worker.employeeName}
+                    </Link>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      #{worker.employeeNumber} · Clocked in{" "}
+                      {formatCentralTime(worker.clockIn)} ·{" "}
+                      {elapsedLabel(worker.clockIn)}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  </div>
+
+                  <div className="sm:text-right">
+                    {worker.currentJobId && worker.currentJobNumber ? (
+                      <>
+                        <Link
+                          href={`/dashboard/jobs/${worker.currentJobId}`}
+                          className="font-medium underline-offset-4 hover:underline"
+                        >
+                          {worker.currentJobNumber}
+                        </Link>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {worker.jobStartedAt
+                            ? `Since ${formatCentralTime(worker.jobStartedAt)}`
+                            : "Current job"}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-medium">No active job</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Time is currently unallocated
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+
+        <article className="rounded-lg border border-border bg-card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                This Workweek
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Monday–Sunday payroll status.
+              </p>
+            </div>
+
+            <Link
+              href={`/dashboard/payroll?from=${weekStart}&to=${weekEnd}`}
+              className="text-sm font-medium underline-offset-4 hover:underline"
+            >
+              Payroll
+            </Link>
+          </div>
+
+          <dl className="mt-6 space-y-4">
+            <StatRow
+              label="Total hours"
+              value={`${formatHours(weekPayroll.summary.totalHours)} hrs`}
+            />
+            <StatRow
+              label="Regular"
+              value={`${formatHours(weekPayroll.summary.regularHours)} hrs`}
+            />
+            <StatRow
+              label="Overtime"
+              value={`${formatHours(weekPayroll.summary.overtimeHours)} hrs`}
+            />
+            <StatRow
+              label="Incomplete shifts"
+              value={String(weekPayroll.summary.incompleteShifts)}
+            />
+            <StatRow
+              label="Today's unallocated"
+              value={`${formatHours(todayReport.summary.unallocatedHours)} hrs`}
+            />
+          </dl>
+
+          {weekPayroll.summary.incompleteShifts > 0 ? (
+            <div className="mt-6 rounded-md border border-border bg-muted/40 p-3 text-sm">
+              Payroll is preliminary while open shifts remain.
+            </div>
+          ) : null}
+        </article>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1fr_0.45fr]">
+        <article className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border p-5">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                Today's Job Labor
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Assigned labor hours by job today.
+              </p>
+            </div>
+
+            <Link
+              href={`/dashboard/reports?from=${today}&to=${today}`}
+              className="text-sm font-medium underline-offset-4 hover:underline"
+            >
+              Full Report
+            </Link>
+          </div>
+
+          {topJobs.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No job labor has been recorded today.
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {topJobs.map((job) => (
+                <div
+                  key={job.jobId}
+                  className="flex items-center justify-between gap-4 p-4"
+                >
+                  <div>
+                    <Link
+                      href={`/dashboard/jobs/${job.jobId}`}
+                      className="font-medium underline-offset-4 hover:underline"
+                    >
+                      {job.jobNumber}
+                    </Link>
+                    <div className="mt-1 text-xs capitalize text-muted-foreground">
+                      {job.category}
+                      {job.customer ? ` · ${job.customer}` : ""}
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="font-semibold">
+                      {formatHours(job.laborHours)} hrs
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {job.employeeCount} employee
+                      {job.employeeCount === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+
+        <article className="rounded-lg border border-border bg-card p-5">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Quick Actions
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Common administrative views.
+          </p>
+
+          <div className="mt-5 grid gap-2">
+            <QuickLink href="/dashboard/shifts">View Live Shifts</QuickLink>
+            <QuickLink href="/dashboard/timesheets">
+              Review Timesheets
+            </QuickLink>
+            <QuickLink href="/dashboard/jobs">Manage Jobs</QuickLink>
+            <QuickLink href="/dashboard/qr-codes">QR Codes</QuickLink>
+            <QuickLink href="/dashboard/reports">Reports</QuickLink>
+            <QuickLink href="/dashboard/payroll">Payroll</QuickLink>
+          </div>
+        </article>
+      </section>
     </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <article className="rounded-lg border border-border bg-card p-5">
+      <div className="text-sm font-medium text-muted-foreground">{label}</div>
+      <div className="mt-2 text-3xl font-semibold tracking-tight">{value}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{detail}</div>
+    </article>
+  );
+}
+
+function StatRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="font-semibold">{value}</dd>
+    </div>
+  );
+}
+
+function QuickLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-md border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-accent"
+    >
+      {children}
+    </Link>
   );
 }
