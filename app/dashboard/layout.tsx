@@ -75,20 +75,28 @@ if (profile.role !== "admin") {
               </div>
 
               <Link
-                href="/dashboard/employees"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              >           
-                <Users className="h-4 w-4" />
-                Employees
-              </Link>
+  href="/dashboard/employees"
+  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+>
+  <Users className="h-4 w-4" />
+  Employees
+</Link>
 
-              <Link
-                href="/dashboard/timesheets"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              >
-                <Clock3 className="h-4 w-4" />
-                Timesheets
-              </Link>
+<Link
+  href="/dashboard/timesheets"
+  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+>
+  <Clock3 className="h-4 w-4" />
+  Timesheets
+</Link>
+
+<Link
+  href="/dashboard/shifts"
+  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+>
+  <Clock3 className="h-4 w-4" />
+  Shifts
+</Link>
 
               <div className="mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Work
