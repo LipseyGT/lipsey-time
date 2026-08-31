@@ -20,7 +20,7 @@ export async function getJobsAccess() {
     .single();
 
   if (profileError || !profile) {
-    redirect("/protected");
+    redirect("/dashboard");
   }
 
   return {
@@ -34,7 +34,7 @@ export async function requireJobsAdmin() {
   const access = await getJobsAccess();
 
   if (!access.isAdmin) {
-    redirect("/protected/jobs");
+  redirect("/dashboard");
   }
 
   return access;

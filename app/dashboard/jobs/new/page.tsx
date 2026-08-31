@@ -17,7 +17,7 @@ export default async function NewJobPage({
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <div>
         <Link
-          href="/protected/jobs"
+          href="/dashboard/jobs"
           className="text-sm text-muted-foreground underline-offset-4 hover:underline"
         >
           ← Back to Jobs

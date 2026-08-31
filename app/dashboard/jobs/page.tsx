@@ -63,7 +63,7 @@ export default async function JobsPage({
         </div>
 
         <Link
-          href="/protected/jobs/new"
+          href="/dashboard/jobs/new"
           className="inline-flex items-center justify-center rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition hover:opacity-90"
         >
           + New Job
@@ -150,7 +150,7 @@ export default async function JobsPage({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
-                      href={`/protected/jobs/${job.id}`}
+                      href={`/dashboard/jobs/${job.id}`}
                       className="font-medium underline-offset-4 hover:underline"
                     >
                       View

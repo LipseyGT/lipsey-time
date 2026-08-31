@@ -33,7 +33,7 @@ export default async function EditJobPage({
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <div>
         <Link
-          href={`/protected/jobs/${job.id}`}
+          href={`/dashboard/jobs/${job.id}`}
           className="text-sm text-muted-foreground underline-offset-4 hover:underline"
         >
           ← Back to {job.job_number}

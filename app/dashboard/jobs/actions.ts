@@ -49,7 +49,7 @@ export async function createJob(formData: FormData) {
   const jobNumber = normalizeJobNumber(formData.get("job_number"));
 
   if (!jobNumber) {
-    redirect("/protected/jobs/new?error=Job%20number%20is%20required.");
+    redirect("/dashboard/jobs/new?error=Job%20number%20is%20required.");
   }
 
   const { data, error } = await supabase
@@ -68,11 +68,11 @@ export async function createJob(formData: FormData) {
     const message = encodeURIComponent(
       jobErrorMessage(error ?? { message: "The job could not be created." }),
     );
-    redirect(`/protected/jobs/new?error=${message}`);
+    redirect(`/dashboard/jobs/new?error=${message}`);
   }
 
-  revalidatePath("/protected/jobs");
-  redirect(`/protected/jobs/${data.id}?created=1`);
+  revalidatePath("/dashboard/jobs");
+  redirect(`/dashboard/jobs/${data.id}?created=1`);
 }
 
 export async function updateJob(formData: FormData) {
@@ -80,13 +80,13 @@ export async function updateJob(formData: FormData) {
   const id = parseId(formData.get("id"));
 
   if (!id) {
-    redirect("/protected/jobs?error=Invalid%20job.");
+    redirect("/dashboard/jobs?error=Invalid%20job.");
   }
 
   const jobNumber = normalizeJobNumber(formData.get("job_number"));
 
   if (!jobNumber) {
-    redirect(`/protected/jobs/${id}/edit?error=Job%20number%20is%20required.`);
+    redirect(`/dashboard/jobs/${id}/edit?error=Job%20number%20is%20required.`);
   }
 
   const { error } = await supabase
@@ -102,12 +102,12 @@ export async function updateJob(formData: FormData) {
 
   if (error) {
     const message = encodeURIComponent(jobErrorMessage(error));
-    redirect(`/protected/jobs/${id}/edit?error=${message}`);
+    redirect(`/dashboard/jobs/${id}/edit?error=${message}`);
   }
 
-  revalidatePath("/protected/jobs");
-  revalidatePath(`/protected/jobs/${id}`);
-  redirect(`/protected/jobs/${id}?updated=1`);
+  revalidatePath("/dashboard/jobs");
+  revalidatePath(`/dashboard/jobs/${id}`);
+  redirect(`/dashboard/jobs/${id}?updated=1`);
 }
 
 export async function setJobActive(formData: FormData) {
@@ -115,7 +115,7 @@ export async function setJobActive(formData: FormData) {
   const id = parseId(formData.get("id"));
 
   if (!id) {
-    redirect("/protected/jobs?error=Invalid%20job.");
+    redirect("/dashboard/jobs?error=Invalid%20job.");
   }
 
   const active = formData.get("active") === "true";
@@ -127,10 +127,10 @@ export async function setJobActive(formData: FormData) {
 
   if (error) {
     const message = encodeURIComponent(jobErrorMessage(error));
-    redirect(`/protected/jobs/${id}?error=${message}`);
+    redirect(`/dashboard/jobs/${id}?error=${message}`);
   }
 
-  revalidatePath("/protected/jobs");
-  revalidatePath(`/protected/jobs/${id}`);
-  redirect(`/protected/jobs/${id}?status=updated`);
+  revalidatePath("/dashboard/jobs");
+  revalidatePath(`/dashboard/jobs/${id}`);
+  redirect(`/dashboard/jobs/${id}?status=updated`);
 }

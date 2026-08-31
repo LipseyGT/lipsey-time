@@ -89,7 +89,7 @@ export default async function JobDetailPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Link
-            href="/protected/jobs"
+            href="/dashboard/jobs"
             className="text-sm text-muted-foreground underline-offset-4 hover:underline"
           >
             ← Back to Jobs
@@ -107,7 +107,7 @@ export default async function JobDetailPage({
 
         <div className="flex gap-2">
           <Link
-            href={`/protected/jobs/${job.id}/edit`}
+            href={`/dashboard/jobs/${job.id}/edit`}
             className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
           >
             Edit Job
