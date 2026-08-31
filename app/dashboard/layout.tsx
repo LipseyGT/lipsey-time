@@ -129,6 +129,14 @@ if (profile.role !== "admin") {
   <FileText className="h-4 w-4" />
   Reports
 </Link>
+
+<Link
+  href="/dashboard/payroll"
+  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+>
+  <Clock3 className="h-4 w-4" />
+  Payroll
+</Link>
             </nav>
 
             <div className="border-t p-4">
